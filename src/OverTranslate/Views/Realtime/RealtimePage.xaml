@@ -1,0 +1,728 @@
+<UserControl x:Class="OverTranslate.Views.Realtime.RealtimePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:OverTranslate.Controls">
+
+    <Grid Margin="28,22,28,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ── Page header ── -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,18">
+            <TextBlock Text="{DynamicResource S.Realtime.Title}" Style="{StaticResource PageTitle}"/>
+            <TextBlock Text="{DynamicResource S.Realtime.Subtitle}"
+                       Style="{StaticResource PageSubtitle}"/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Padding="0,0,8,0">
+            <StackPanel MaxWidth="1040">
+
+                <!-- ── 翻譯設定 ── -->
+                <!-- One row of three, because they are one decision said three ways: what is being
+                     read, what it becomes, and who does it. Stacked down the page they read as
+                     three unrelated questions and pushed everything below them a screenful lower,
+                     which matters on a page whose real work — the three steps — is underneath. -->
+                <Border Style="{StaticResource CardBorder}">
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource S.Realtime.TranslationSettings}" Style="{StaticResource SectionHeader}"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- OCR source languages only: this page recognises text off the screen,
+                                 so a language the recogniser cannot read has nothing to offer here.
+                                 Left unset on purpose — see RealtimePage.ApplyPageDefaults. -->
+                            <StackPanel Grid.Column="0" Margin="0,0,7,0">
+                                <TextBlock Text="{DynamicResource S.Realtime.SourceLanguage}" Style="{StaticResource FieldLabel}" Margin="0,0,0,6"/>
+                                <!-- Placeholder rather than a line of help underneath: the field is
+                                     empty because the user has to answer it, and saying so inside
+                                     the empty space puts the instruction where they are already
+                                     looking. Margin matches the selected item's own (9,0,28,0) so
+                                     the prompt and the eventual answer occupy the same spot rather
+                                     than shifting when one replaces the other. -->
+                                <Grid>
+                                    <ComboBox x:Name="SrcLangBox"
+                                              Style="{StaticResource ModernComboBox}"
+                                              SelectedValuePath="Code"/>
+                                    <TextBlock x:Name="SrcLangPlaceholder"
+                                               Text="{DynamicResource S.Realtime.SourceLanguagePrompt}"
+                                               FontFamily="{DynamicResource AppFont}"
+                                               FontSize="{StaticResource AppFontSize}"
+                                               Foreground="{DynamicResource AppTextSecondary}"
+                                               Margin="9,0,28,0"
+                                               VerticalAlignment="Center"
+                                               IsHitTestVisible="False"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Margin="7,0,7,0">
+                                <TextBlock Text="{DynamicResource S.Realtime.TargetLanguage}" Style="{StaticResource FieldLabel}" Margin="0,0,0,6"/>
+                                <ComboBox x:Name="TgtLangBox"
+                                          Style="{StaticResource ModernComboBox}"
+                                          ctl:ComboBoxSearch.IsEnabled="True"
+                                          SelectedValuePath="Code"/>
+                            </StackPanel>
+
+                            <!-- The hint stays under its own field rather than under the row: it is
+                                 about the service and nothing else, and a warning about a missing
+                                 API key is worth the uneven card it makes. -->
+                            <StackPanel Grid.Column="2" Margin="7,0,0,0">
+                                <TextBlock Text="{DynamicResource S.Realtime.Provider}" Style="{StaticResource FieldLabel}" Margin="0,0,0,6"/>
+                                <ComboBox x:Name="ProviderBox"
+                                          Style="{StaticResource ModernComboBox}"
+                                          SelectedValuePath="Provider"/>
+                                <TextBlock x:Name="ProviderHint"
+                                           Style="{StaticResource FieldHint}"
+                                           Margin="0,6,0,0" TextWrapping="Wrap" LineHeight="16"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- ── 步驟 1：選擇擷取方式 ── -->
+                <!-- Numbered from here on, because the three cards below are not three settings the
+                     user may set in any order — the second one cannot be answered until the first
+                     is, and the whole card changes with that answer. A number says that where a
+                     heading only names it. -->
+                <Border Style="{StaticResource CardBorder}" Padding="16,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Column="0" Margin="0,0,20,0">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource StepBadge}">
+                                    <TextBlock Text="1" Style="{StaticResource StepBadgeText}"/>
+                                </Border>
+                                <TextBlock Text="{DynamicResource S.Realtime.Step1Label}" Style="{StaticResource StepLabel}"/>
+                            </StackPanel>
+                            <TextBlock Text="{DynamicResource S.Realtime.Step1Name}" Style="{StaticResource StepTitle}"/>
+                            <TextBlock Text="{DynamicResource S.Realtime.Step1Desc}" Style="{StaticResource StepDescription}"/>
+                        </StackPanel>
+
+                        <!-- Two tiles rather than a dropdown or a pair of radio buttons: there are
+                             exactly two, both fit side by side, and each needs a line of its own to
+                             say what it does — which a closed dropdown cannot show at all. -->
+                        <Grid Grid.Column="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <RadioButton Grid.Column="0"
+                                         x:Name="ScreenModeRadio"
+                                         Style="{StaticResource ChoiceTile}"
+                                         Margin="0,0,6,0"
+                                         IsChecked="True"
+                                         Checked="CaptureModeRadio_Checked">
+                                <StackPanel Orientation="Horizontal">
+                                    <Border Style="{StaticResource ChoiceTileIconBox}">
+                                        <TextBlock Text="&#xE7F4;" Style="{StaticResource ChoiceTileGlyph}"/>
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{DynamicResource S.Realtime.CaptureSourceScreen}"
+                                                   Style="{StaticResource ChoiceTileTitle}"/>
+                                        <TextBlock Text="{DynamicResource S.Realtime.CaptureSourceScreenHint}"
+                                                   Style="{StaticResource FieldHint}"
+                                                   Margin="0,3,0,0"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton Grid.Column="1"
+                                         x:Name="WindowModeRadio"
+                                         Style="{StaticResource ChoiceTile}"
+                                         Margin="6,0,0,0"
+                                         Checked="CaptureModeRadio_Checked">
+                                <StackPanel Orientation="Horizontal">
+                                    <Border Style="{StaticResource ChoiceTileIconBox}">
+                                        <TextBlock Text="&#xE737;" Style="{StaticResource ChoiceTileGlyph}"/>
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{DynamicResource S.Realtime.CaptureSourceWindow}"
+                                                   Style="{StaticResource ChoiceTileTitle}"/>
+                                        <TextBlock Text="{DynamicResource S.Realtime.CaptureSourceWindowHint}"
+                                                   Style="{StaticResource FieldHint}"
+                                                   Margin="0,3,0,0"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </RadioButton>
+                        </Grid>
+
+                        <!-- Under both tiles rather than inside the greyed one: a disabled control
+                             is the wrong place to put the sentence explaining why it is disabled —
+                             it is dimmed along with everything else in the tile, which is exactly
+                             the text the user needs to read. Spans the card so it reads as a fact
+                             about this step, not a footnote to one option. -->
+                        <Border x:Name="ScreenModeNotice"
+                                Grid.Row="1" Grid.ColumnSpan="2"
+                                Style="{StaticResource InfoCardBorder}"
+                                Margin="0,14,0,0"
+                                Visibility="Collapsed">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="&#xE946;"
+                                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                           FontSize="15"
+                                           Foreground="{DynamicResource AppTextSecondary}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,10,0"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="{DynamicResource S.Realtime.ScreenModeUnsupported}"
+                                           FontFamily="{DynamicResource AppFont}"
+                                           FontSize="{StaticResource AppFontSize}"
+                                           Foreground="{DynamicResource AppTextPrimary}"
+                                           TextWrapping="Wrap"
+                                           LineHeight="18"
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- ── 步驟 2：選擇畫面或視窗 ── -->
+                <Border Style="{StaticResource CardBorder}" Padding="16,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Margin="0,0,20,0">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource StepBadge}">
+                                    <TextBlock Text="2" Style="{StaticResource StepBadgeText}"/>
+                                </Border>
+                                <TextBlock Text="{DynamicResource S.Realtime.Step2Label}" Style="{StaticResource StepLabel}"/>
+                            </StackPanel>
+                            <TextBlock Text="{DynamicResource S.Realtime.Step2Name}" Style="{StaticResource StepTitle}"/>
+                            <TextBlock Text="{DynamicResource S.Realtime.Step2Desc}" Style="{StaticResource StepDescription}"/>
+                        </StackPanel>
+
+                        <Grid Grid.Column="1">
+                            <!-- One screen per session, chosen here rather than assumed: the primary
+                                 monitor is not where the game or the video necessarily is.
+
+                                 Hidden in 視窗擷取, where it is not a choice: the blocks have to be
+                                 drawn over the chosen window, so the monitor is wherever that window
+                                 is, and offering the other one would only let the user build a
+                                 session whose framing layer is on a screen the source is not on. -->
+                            <StackPanel x:Name="ScreenPanel">
+                                <TextBlock Text="{DynamicResource S.Realtime.CaptureSourceScreen}"
+                                           Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Text="{DynamicResource S.Realtime.ScreenPrompt}"
+                                           Style="{StaticResource FieldHint}"
+                                           Margin="0,4,0,8"/>
+                                <ComboBox x:Name="ScreenBox"
+                                          Style="{StaticResource ModernComboBox}"
+                                          ctl:ComboBoxDropDown.FitsControlWidth="True"
+                                          ctl:ComboBoxSearch.IsEnabled="True"
+                                          SelectedValuePath="DeviceName"
+                                          SelectionChanged="ScreenBox_SelectionChanged">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="&#xE7F4;"
+                                                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                           FontSize="14"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,10,0"/>
+                                                <TextBlock Text="{Binding Display}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <TextBlock Text="{DynamicResource S.Realtime.ScreenHint}"
+                                           Style="{StaticResource FieldHint}"
+                                           Margin="0,8,0,0" TextWrapping="Wrap" LineHeight="16"/>
+                            </StackPanel>
+
+                            <!-- Collapsed rather than disabled in 螢幕擷取: a greyed-out window
+                                 picker invites the reader to work out why it is off, and the answer
+                                 is already on the tile they did not press. -->
+                            <StackPanel x:Name="WindowPickerPanel" Visibility="Collapsed">
+                                <TextBlock Text="{DynamicResource S.Realtime.CaptureSourceWindow}"
+                                           Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Text="{DynamicResource S.Realtime.CaptureWindowPromptLine}"
+                                           Style="{StaticResource FieldHint}"
+                                           Margin="0,4,0,8"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Same placeholder arrangement as 來源語言 above: the field is
+                                         empty because the user has to answer it, and the prompt sits
+                                         where the answer will be. -->
+                                    <Grid Grid.Column="0">
+                                        <!-- Window titles are somebody else's text and can be any
+                                             length; the list stays the width of the picker and
+                                             scrolls sideways instead of growing across the card. -->
+                                        <ComboBox x:Name="WindowBox"
+                                                  Style="{StaticResource ModernComboBox}"
+                                                  ctl:ComboBoxDropDown.FitsControlWidth="True"
+                                                  ctl:ComboBoxSearch.IsEnabled="True"
+                                                  SelectionChanged="WindowBox_SelectionChanged"
+                                                  DropDownOpened="WindowBox_DropDownStateChanged"
+                                                  DropDownClosed="WindowBox_DropDownStateChanged">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="&#xE737;"
+                                                                   FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                                   FontSize="14"
+                                                                   VerticalAlignment="Center"
+                                                                   Margin="0,0,10,0"/>
+                                                        <TextBlock Text="{Binding Display}" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <TextBlock x:Name="WindowPlaceholder"
+                                                   Text="{DynamicResource S.Realtime.CaptureWindowPrompt}"
+                                                   FontFamily="{DynamicResource AppFont}"
+                                                   FontSize="{StaticResource AppFontSize}"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
+                                                   Margin="9,0,28,0"
+                                                   VerticalAlignment="Center"
+                                                   IsHitTestVisible="False"/>
+                                    </Grid>
+
+                                    <!-- Icon and word both: the list is a snapshot of what was open
+                                         when the page last asked, and a user who has just opened the
+                                         game needs to know there is something to press. A lone glyph
+                                         beside a dropdown reads as part of the dropdown. -->
+                                    <Button Grid.Column="1"
+                                            x:Name="RefreshWindowsBtn"
+                                            Style="{StaticResource IconTextButton}"
+                                            Margin="8,0,0,0"
+                                            VerticalAlignment="Center"
+                                            AutomationProperties.Name="{DynamicResource S.Realtime.RefreshWindows}"
+                                            Click="RefreshWindowsBtn_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE72C;"
+                                                       FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       FontSize="13"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,1,6,0"/>
+                                            <TextBlock Text="{DynamicResource S.Realtime.RefreshWindows}"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+
+                                <TextBlock x:Name="WindowHint"
+                                           Style="{StaticResource FieldHint}"
+                                           Margin="0,8,0,0" TextWrapping="Wrap" LineHeight="16"/>
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <!-- ── 步驟 3：設定翻譯區塊 ── -->
+                <Border Style="{StaticResource CardBorder}" Padding="16,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Margin="0,0,20,0">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Style="{StaticResource StepBadge}">
+                                    <TextBlock Text="3" Style="{StaticResource StepBadgeText}"/>
+                                </Border>
+                                <TextBlock Text="{DynamicResource S.Realtime.Step3Label}" Style="{StaticResource StepLabel}"/>
+                            </StackPanel>
+                            <TextBlock Text="{DynamicResource S.Realtime.Step3Name}" Style="{StaticResource StepTitle}"/>
+                            <TextBlock Text="{DynamicResource S.Realtime.Step3Desc}" Style="{StaticResource StepDescription}"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="{DynamicResource S.Realtime.BlockCount}" Style="{StaticResource FieldLabel}" Margin="0,0,0,8"/>
+                            <!-- A stepper rather than a text field: the value is one of three, and a
+                                 box that accepts typing invites 0, 99 and empty, each of which then
+                                 needs its own rule. The number is display-only and the two buttons
+                                 are the only way in, so no input can be wrong. -->
+                            <Border Style="{StaticResource StepperBorder}" HorizontalAlignment="Left">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button x:Name="BlockCountDown"
+                                            Style="{StaticResource StepperButton}"
+                                            Content="&#xE949;"
+                                            AutomationProperties.Name="{DynamicResource S.Realtime.DecreaseBlocks}"
+                                            Click="BlockCountDown_Click"/>
+                                    <TextBlock x:Name="BlockCountText"
+                                               Style="{StaticResource StepperValue}"
+                                               Text="1"/>
+                                    <Button x:Name="BlockCountUp"
+                                            Style="{StaticResource StepperButton}"
+                                            Content="&#xE948;"
+                                            AutomationProperties.Name="{DynamicResource S.Realtime.IncreaseBlocks}"
+                                            Click="BlockCountUp_Click"/>
+                                </StackPanel>
+                            </Border>
+                            <TextBlock Text="{DynamicResource S.Realtime.BlockCountHint}"
+                                       Style="{StaticResource FieldHint}"
+                                       Margin="0,8,0,0" TextWrapping="Wrap" LineHeight="16"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- ── 顯示外觀 ── -->
+                <!-- The one card on this page whose values are kept — see the class remarks for the
+                     rule that separates these from the session parameters above. -->
+                <!-- Four groups, one per kind of decision: what it will look like, the two colours,
+                     how heavy the band is, and the two effects that are off until asked for. The
+                     card held all of them in one column before, which read as one long list of
+                     unrelated controls; grouping is what tells the reader that the slider belongs to
+                     the colour above it and not to the switches below. -->
+                <Border Style="{StaticResource CardBorder}">
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource S.Realtime.Appearance}" Style="{StaticResource SectionHeader}"/>
+
+                        <!-- Preview first, above the controls that feed it. A session hides the
+                             shell window, so this is the last moment the user can see their colours
+                             together — after 選取翻譯區塊 there is no way back to this page without
+                             ending the session. -->
+                        <Border Style="{StaticResource InnerGroupBorder}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource S.Realtime.Preview}"
+                                           Style="{StaticResource FieldLabel}"
+                                           Margin="0,0,0,8"/>
+                                <!-- Checkered rather than filled: what is behind the band is a game
+                                     or a video this page cannot know, and a chequerboard says that
+                                     where a flat colour quietly claimed to be it. The two greys are
+                                     fixed in both themes — see TransparencyChecker for why. -->
+                                <Border x:Name="PreviewBackdrop"
+                                        Height="72"
+                                        CornerRadius="4"
+                                        Background="{StaticResource TransparencyChecker}"
+                                        ClipToBounds="True">
+                                    <Border x:Name="PreviewScrim"
+                                            CornerRadius="3"
+                                            Padding="14,6"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center">
+                                        <TextBlock x:Name="PreviewText"
+                                                   Text="{DynamicResource S.Realtime.PreviewText}"
+                                                   FontFamily="Microsoft JhengHei, Segoe UI Variable Text, Segoe UI, Sans-Serif"
+                                                   FontSize="15"
+                                                   FontWeight="SemiBold"/>
+                                    </Border>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- The two colours and the undo that acts on both, on one row: they are the
+                             same kind of thing said three ways, and stacking them made this taller
+                             than the settings it holds. The labels sit above their own control so
+                             they stay put however wide the hex text gets, and the divider says which
+                             label belongs to which swatch without a second border. -->
+                        <Border Style="{StaticResource InnerGroupBorder}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Column="0" Grid.Row="0" Text="{DynamicResource S.Realtime.TextColor}"
+                                           Style="{StaticResource FieldLabel}" Margin="2,0,0,6"/>
+                                <Button Grid.Column="0" Grid.Row="1"
+                                        x:Name="TextColorBtn"
+                                        Style="{StaticResource FlatButton}"
+                                        Height="34"
+                                        Padding="6,0"
+                                        Click="TextColorBtn_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Border x:Name="TextColorSwatch"
+                                                Width="20" Height="20"
+                                                CornerRadius="3"
+                                                BorderThickness="1"
+                                                BorderBrush="{DynamicResource AppBorder}"
+                                                VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="TextColorValue"
+                                                   VerticalAlignment="Center"
+                                                   Margin="8,0,6,0"/>
+                                        <TextBlock Text="&#xE70D;"
+                                                   FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                   FontSize="10"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,2,0"/>
+                                    </StackPanel>
+                                </Button>
+
+                                <Border Grid.Column="1" Grid.Row="0" Grid.RowSpan="2"
+                                        Width="1"
+                                        Margin="16,2,16,2"
+                                        Background="{DynamicResource AppSubtleBorder}"/>
+
+                                <TextBlock Grid.Column="2" Grid.Row="0" Text="{DynamicResource S.Realtime.ScrimColor}"
+                                           Style="{StaticResource FieldLabel}" Margin="2,0,0,6"/>
+                                <Button Grid.Column="2" Grid.Row="1"
+                                        x:Name="ScrimColorBtn"
+                                        Style="{StaticResource FlatButton}"
+                                        Height="34"
+                                        Padding="6,0"
+                                        Click="ScrimColorBtn_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Border x:Name="ScrimColorSwatch"
+                                                Width="20" Height="20"
+                                                CornerRadius="3"
+                                                BorderThickness="1"
+                                                BorderBrush="{DynamicResource AppBorder}"
+                                                VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="ScrimColorValue"
+                                                   VerticalAlignment="Center"
+                                                   Margin="8,0,6,0"/>
+                                        <TextBlock Text="&#xE70D;"
+                                                   FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                   FontSize="10"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,2,0"/>
+                                    </StackPanel>
+                                </Button>
+
+                                <!-- Labelled now rather than icon-only: it sits at the far end of a
+                                     wide row, where a lone glyph is a guess. On the controls' row
+                                     rather than spanning both, so it lines up with the two buttons
+                                     it acts on instead of floating between them and their labels.
+                                     Available only once something has been changed — a reset that
+                                     would do nothing still looks like it might, and the user has to
+                                     press it to find out. -->
+                                <Button Grid.Column="4" Grid.Row="1"
+                                        x:Name="ResetColorsBtn"
+                                        Style="{StaticResource IconTextButton}"
+                                        VerticalAlignment="Center"
+                                        ToolTip="{DynamicResource S.Realtime.ResetColors}"
+                                        AutomationProperties.Name="{DynamicResource S.Realtime.ResetColorsName}"
+                                        Click="ResetColorsBtn_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE72C;"
+                                                   FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                   FontSize="13"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,1,6,0"/>
+                                        <TextBlock Text="{DynamicResource S.Common.Reset}"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </Border>
+
+                        <!-- Label, slider and number on one line. The slider is the one control here
+                             the user sets by watching something else — the preview above is what
+                             tells them when the band is right — so it gets the whole width that is
+                             left, and the number keeps a fixed column so the track does not shift
+                             under the thumb as the value goes from 7% to 72%. -->
+                        <Border Style="{StaticResource InnerGroupBorder}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="{DynamicResource S.Realtime.ScrimOpacity}"
+                                           Style="{StaticResource FieldLabel}"
+                                           Margin="2,0,16,0"/>
+                                <Slider Grid.Column="1"
+                                        x:Name="ScrimOpacitySlider"
+                                        Style="{StaticResource AppSlider}"
+                                        VerticalAlignment="Center"
+                                        Minimum="0"
+                                        Maximum="100"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="True"
+                                        AutomationProperties.Name="{DynamicResource S.Realtime.ScrimOpacity}"
+                                        ValueChanged="ScrimOpacitySlider_ValueChanged"/>
+                                <TextBlock Grid.Column="2"
+                                           x:Name="ScrimOpacityValue"
+                                           Style="{StaticResource FieldLabel}"
+                                           MinWidth="42"
+                                           TextAlignment="Right"
+                                           Margin="16,0,2,0"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Off until asked for, both of them, which is why they are a group of
+                             their own rather than two more controls above: everything above this
+                             describes a band the user chose the colours of, and everything in here
+                             replaces part of that with something read off the screen. -->
+                        <Border Style="{StaticResource InnerGroupBorder}" Margin="0,0,0,8">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource S.Realtime.AdvancedOptions}"
+                                           Style="{StaticResource FieldLabel}"
+                                           Margin="0,0,0,8"/>
+
+                                <Border Style="{StaticResource ToggleRowBorder}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0"
+                                                   Text="&#xE91B;"
+                                                   FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                   FontSize="18"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
+                                                   VerticalAlignment="Center"
+                                                   Margin="2,0,14,0"/>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{DynamicResource S.Realtime.NaturalBackground}"
+                                                       FontFamily="{DynamicResource AppFont}"
+                                                       FontSize="{StaticResource AppFontSize}"
+                                                       Foreground="{DynamicResource AppTextPrimary}"/>
+                                            <TextBlock Text="{DynamicResource S.Realtime.NaturalBackgroundHint}"
+                                                       Style="{StaticResource FieldHint}"
+                                                       Margin="0,3,0,0"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="2"
+                                                  x:Name="NaturalBackgroundToggle"
+                                                  Style="{StaticResource ToggleSwitch}"
+                                                  Margin="14,0,2,0"
+                                                  AutomationProperties.Name="{DynamicResource S.Realtime.NaturalBackground}"/>
+                                    </Grid>
+                                </Border>
+
+                                <Border Style="{StaticResource ToggleRowBorder}" Margin="0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0"
+                                                   Text="&#xEF3C;"
+                                                   FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                   FontSize="18"
+                                                   Foreground="{DynamicResource AppTextSecondary}"
+                                                   VerticalAlignment="Center"
+                                                   Margin="2,0,14,0"/>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{DynamicResource S.Realtime.SampleTextColor}"
+                                                       FontFamily="{DynamicResource AppFont}"
+                                                       FontSize="{StaticResource AppFontSize}"
+                                                       Foreground="{DynamicResource AppTextPrimary}"/>
+                                            <TextBlock Text="{DynamicResource S.Realtime.SampleTextColorHint}"
+                                                       Style="{StaticResource FieldHint}"
+                                                       Margin="0,3,0,0"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="2"
+                                                  x:Name="SampleTextColorToggle"
+                                                  Style="{StaticResource ToggleSwitch}"
+                                                  Margin="14,0,2,0"
+                                                  AutomationProperties.Name="{DynamicResource S.Realtime.SampleTextColor}"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Outside the group rather than inside it: it is not a third option, it
+                             is when both of the two above are worth having.
+
+                             It used to warn about performance, which was not true and pointed the
+                             reader at the wrong question. Both options work by reading the pixels
+                             already on screen: the colour sampler reads once, when a line is rebuilt
+                             after the text changed, and the background repair runs on its own thread
+                             at 4Hz over the block's own strip and stops at a fingerprint when the
+                             picture has not moved. What actually decides whether to turn them on is
+                             the content: a picture that holds still is one they can read correctly,
+                             and a picture that does not is one they are always a moment behind. -->
+                        <Grid Margin="4,0,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Text="&#xE946;"
+                                       FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource AppTextSecondary}"
+                                       Margin="0,3,7,0"
+                                       VerticalAlignment="Top"/>
+                            <TextBlock Grid.Column="1"
+                                       Text="{DynamicResource S.Realtime.AdvancedOptionsBestFor}"
+                                       Style="{StaticResource FieldHint}"
+                                       Margin="0"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- ── 運作方式 ── -->
+                <!-- Four lines, because the on-screen half of this feature is a mode the user has
+                     not seen before: what the button does, what happens next, the one property that
+                     is not obvious from looking at it (the blocks do not take the mouse), and the
+                     way to put the overlays away for a scene without giving up the blocks. -->
+                <Border Style="{StaticResource CardBorder}">
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource S.Realtime.HowItWorks}" Style="{StaticResource SectionHeader}"/>
+                        <TextBlock Style="{StaticResource FieldHint}" TextWrapping="Wrap" LineHeight="16" Margin="0,0,0,6"
+                                   Text="{DynamicResource S.Realtime.Step1}"/>
+                        <TextBlock Style="{StaticResource FieldHint}" TextWrapping="Wrap" LineHeight="16" Margin="0,0,0,6"
+                                   Text="{DynamicResource S.Realtime.Step2}"/>
+                        <TextBlock Style="{StaticResource FieldHint}" TextWrapping="Wrap" LineHeight="16"
+                                   Text="{DynamicResource S.Realtime.Step3}"/>
+                        <!-- Filled in by RenderPauseHint, which names the user's own shortcut and
+                             drops the line entirely when they have cleared it. Its top margin sits
+                             on this line rather than under the one above, so a hidden hint does not
+                             leave a gap at the bottom of the card. -->
+                        <TextBlock x:Name="PauseHint"
+                                   Style="{StaticResource FieldHint}" TextWrapping="Wrap" LineHeight="16"
+                                   Margin="0,6,0,0"
+                                   Visibility="Collapsed"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ── Footer ── -->
+        <DockPanel Grid.Row="2" Margin="0,14,0,0" VerticalAlignment="Center">
+            <Button x:Name="PrimaryBtn"
+                    Content="{DynamicResource S.Realtime.SelectBlocks}"
+                    Style="{StaticResource AccentButton}"
+                    Height="36" MinWidth="140" Padding="16,0"
+                    DockPanel.Dock="Left"
+                    Margin="0,0,14,0"
+                    Click="PrimaryBtn_Click"/>
+            <TextBlock x:Name="StatusText"
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap"
+                       FontFamily="{DynamicResource AppFont}"
+                       FontSize="12"
+                       Foreground="{DynamicResource AppTextSecondary}"/>
+        </DockPanel>
+    </Grid>
+</UserControl>

@@ -1,0 +1,310 @@
+<UserControl x:Class="OverTranslate.Views.Translation.TranslationPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:OverTranslate.Views.Controls"
+             xmlns:ctl="clr-namespace:OverTranslate.Controls">
+
+    <Grid Margin="28,22,28,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ── Page header ── -->
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="{DynamicResource S.Translation.Title}" Style="{StaticResource PageTitle}"/>
+            <TextBlock Text="{DynamicResource S.Translation.Subtitle}"
+                       Style="{StaticResource PageSubtitle}"/>
+        </StackPanel>
+
+        <!-- ── Language / provider selectors ── -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,18,0,12">
+            <ComboBox x:Name="SrcLangBox"
+                      Style="{StaticResource ModernComboBox}"
+                      ctl:ComboBoxSearch.IsEnabled="True"
+                      Width="162" Height="32" Margin="0,0,6,0"
+                      SelectedValuePath="Code"
+                      VerticalContentAlignment="Center"/>
+
+            <Button Content="⇄"
+                    Style="{StaticResource IconButton}"
+                    Width="32" Height="32" Margin="0,0,6,0"
+                    FontSize="13"
+                    ToolTip="{DynamicResource S.Translation.SwapTip}"
+                    Click="SwapBtn_Click"/>
+
+            <ComboBox x:Name="TgtLangBox"
+                      Style="{StaticResource ModernComboBox}"
+                      ctl:ComboBoxSearch.IsEnabled="True"
+                      Width="162" Height="32" Margin="0,0,6,0"
+                      SelectedValuePath="Code"
+                      VerticalContentAlignment="Center"/>
+
+            <!-- 180, not 148: sized to the longest provider name in either language
+                 ("Google Translate (RPC)"), since the English names run longer than the Chinese
+                 ones they were measured against. Fixed rather than Auto on purpose — an Auto
+                 ComboBox takes its width from the widest entry in the list, which for the language
+                 pickers beside it would be whichever language happens to have the longest name. -->
+            <ComboBox x:Name="ProviderBox"
+                      Style="{StaticResource ModernComboBox}"
+                      Width="180" Height="32"
+                      SelectedValuePath="Provider"
+                      VerticalContentAlignment="Center"/>
+        </StackPanel>
+
+        <!-- ── Split content card ── -->
+        <Border Grid.Row="2"
+                CornerRadius="8"
+                Background="{DynamicResource AppSurfaceBg}"
+                BorderBrush="{DynamicResource AppBorder}"
+                BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Left pane -->
+                <Grid Grid.Column="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0"
+                            BorderBrush="{DynamicResource AppSubtleBorder}"
+                            BorderThickness="0,0,0,1"
+                            Padding="14,6">
+                        <!-- Both glyphs come from the icon font, and that is the whole reason the
+                             two buttons line up. WPF centres a text *line box*, not the ink inside
+                             it, so mixing an emoji (line 18.62, ink pushed low) with an icon glyph
+                             (line 11.00, ink near-centred) left the ✕ sitting 1.2px above the
+                             speaker — visible, and not fixable by touching the buttons, which were
+                             already the same size and already centred.
+
+                             E8BB and E767/E71A are the pair that share an axis: measured, both land
+                             their ink centre exactly on the button's centre at every font size,
+                             where E711 and the rest of the ✕ glyphs come in 0.41px high. The sizes
+                             differ only to make the two inks the same height (11.00 against 10.96);
+                             neither affects the alignment. -->
+                        <!-- LastChildFill="False" because there is no longer a child meant to take
+                             the middle. A DockPanel hands the leftover width to its last child
+                             whatever that child asked for, so with the note gone the clear button
+                             inherited the gap and centred itself in it, adrift from the speaker it
+                             belongs beside. The 譯文 header opposite still fills, and should: its
+                             last child is the label, which is what the space there is for. -->
+                        <DockPanel VerticalAlignment="Center" LastChildFill="False">
+                            <TextBlock DockPanel.Dock="Left"
+                                       Text="{DynamicResource S.Translation.Source}"
+                                       FontFamily="{DynamicResource AppFont}"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource AppTextSecondary}"
+                                       VerticalAlignment="Center"/>
+
+                            <!-- Declared before the clear button so it is the outermost of the two.
+                                 That keeps it aligned with 譯文's speaker across the divider, and
+                                 keeps it still while the clear button comes and goes beside it.
+
+                                 ShowOnDisabled because this button spends real time disabled — see
+                                 RenderSourceActions — and WPF withholds tooltips from disabled
+                                 controls by default. The note beside it is what actually tells the
+                                 user; this is the longer sentence for whoever hovers. -->
+                            <Button DockPanel.Dock="Right"
+                                    x:Name="SrcTtsBtn"
+                                    Content="&#xE767;"
+                                    FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                    FontSize="13"
+                                    Width="30" Height="26" Padding="0"
+                                    Style="{StaticResource IconButton}"
+                                    ToolTipService.ShowOnDisabled="True"
+                                    Click="SrcTtsBtn_Click"/>
+                            <!-- Only present when there is something to clear. A button that cannot
+                                 do anything should not be occupying the row. -->
+                            <Button DockPanel.Dock="Right"
+                                    x:Name="SrcClearBtn"
+                                    Content="&#xE8BB;"
+                                    FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                    FontSize="9"
+                                    Width="30" Height="26" Padding="0" Margin="0,0,2,0"
+                                    Style="{StaticResource IconButton}"
+                                    Visibility="Collapsed"
+                                    ToolTip="{DynamicResource S.Translation.ClearSource}"
+                                    AutomationProperties.Name="{DynamicResource S.Translation.ClearSource}"
+                                    Click="SrcClearBtn_Click"/>
+
+                            <!-- The 原文 label used to share this row with a note explaining the
+                                 greyed speaker. It has moved to the foot of the page: a short
+                                 sentence squeezed between the label and the buttons had to be cut
+                                 down to fit, and the cut-down version named the rule without saying
+                                 what to do about it. The full sentence is downstairs now, where
+                                 there is room for it. -->
+                        </DockPanel>
+                    </Border>
+                    <TextBox Grid.Row="1"
+                             x:Name="SourceTextBox"
+                             Style="{StaticResource MultilineTextBox}"
+                             Background="Transparent"/>
+                </Grid>
+
+                <!-- Splitter: 1px rule with a wider invisible grab area -->
+                <Grid Grid.Column="1">
+                    <Rectangle Width="1" Fill="{DynamicResource AppSubtleBorder}"/>
+                    <GridSplitter Width="5"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Stretch"
+                                  Background="Transparent"
+                                  ResizeDirection="Columns"
+                                  Cursor="SizeWE"/>
+                </Grid>
+
+                <!-- Right pane -->
+                <Grid Grid.Column="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0"
+                            BorderBrush="{DynamicResource AppSubtleBorder}"
+                            BorderThickness="0,0,0,1"
+                            Padding="14,6">
+                        <DockPanel VerticalAlignment="Center">
+                            <Button DockPanel.Dock="Right"
+                                    x:Name="TgtTtsBtn"
+                                    Content="&#xE767;"
+                                    FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                    FontSize="13"
+                                    Width="30" Height="26" Padding="0"
+                                    Style="{StaticResource IconButton}"
+                                    ToolTip="{DynamicResource S.Translation.SpeakResult}"
+                                    Click="TgtTtsBtn_Click"/>
+                            <TextBlock Text="{DynamicResource S.Translation.Result}"
+                                       FontFamily="{DynamicResource AppFont}"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource AppTextSecondary}"
+                                       VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Indeterminate bar: visible only while an auto-translation is in flight -->
+                    <ProgressBar Grid.Row="1"
+                                 x:Name="TranslatingBar"
+                                 Height="3"
+                                 IsIndeterminate="True"
+                                 Visibility="Collapsed"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 Foreground="{DynamicResource AppAccent}"/>
+
+                    <Grid x:Name="TranslationResultLayout"
+                          Grid.Row="2"
+                          SizeChanged="TranslationResultLayout_SizeChanged">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" MinHeight="96"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBox Grid.Row="0"
+                                 x:Name="TranslatedTextBox"
+                                 Style="{StaticResource MultilineTextBox}"
+                                 IsReadOnly="True"
+                                 Background="Transparent"/>
+
+                        <ScrollViewer x:Name="DictionaryScroller"
+                                      Grid.Row="1"
+                                      MaxHeight="290"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                            <Border x:Name="DictionaryHost"
+                                    BorderBrush="{DynamicResource AppSubtleBorder}"
+                                    BorderThickness="0,1,0,0"
+                                    Visibility="Collapsed">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <ProgressBar x:Name="DictionaryLoadingBar"
+                                                 Grid.Row="0"
+                                                 Height="2"
+                                                 IsIndeterminate="True"
+                                                 Visibility="Collapsed"
+                                                 BorderThickness="0"
+                                                 Background="Transparent"
+                                                 Foreground="{DynamicResource AppAccent}"/>
+
+                                    <controls:DictionaryResultView x:Name="DictionaryView"
+                                                                   Grid.Row="1"
+                                                                   Margin="14,12,14,8"/>
+                                </Grid>
+                            </Border>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- ── Footer ── -->
+        <DockPanel Grid.Row="3" Margin="0,12,0,0" VerticalAlignment="Center">
+            <!-- Retry surfaces only when an auto-translate fails (no permanent translate button) -->
+            <Button x:Name="RetryBtn"
+                    Content="{DynamicResource S.Translation.Retry}"
+                    Style="{StaticResource FlatButton}"
+                    Height="30" Padding="14,0"
+                    DockPanel.Dock="Left"
+                    Visibility="Collapsed"
+                    Margin="0,0,12,0"
+                    Click="RetryBtn_Click"/>
+
+            <!-- Why 朗讀原文 is greyed, and only in the one state that earns saying it:
+                 OpenAI-compatible servers are never asked what language the original was in — the
+                 prompt they are sent belongs to the user and cannot carry a second answer — so with
+                 自動 there is no voice to read it in and there never will be. Every other engine
+                 answers as a by-product of translating, which is a wait rather than a wall and needs
+                 no note.
+
+                 The same line as the status text, not a row of its own. This line is empty almost
+                 all of the time, so the note lives in it rather than adding height the page has to
+                 keep whether or not anything is being said — see RenderFooter for which of the two
+                 wins when both have something.
+
+                 The same wording and the same ⓘ as 取詞翻譯's, because it is the same rule and
+                 someone who has met it once should recognise it rather than read it again.
+
+                 AppTextSecondary rather than AppError: nothing has gone wrong, a combination simply
+                 cannot do a thing. An alarm colour on a line that is on screen for the whole session
+                 would be shouting. -->
+            <StackPanel x:Name="SrcTtsNote"
+                        DockPanel.Dock="Left"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        Visibility="Collapsed">
+                <TextBlock Text="&#xE946;"
+                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                           FontSize="11"
+                           Foreground="{DynamicResource AppTextSecondary}"
+                           VerticalAlignment="Center"
+                           Margin="0,0,6,0"/>
+                <TextBlock Text="{DynamicResource S.Translation.SpeakSourceOpenAi}"
+                           Style="{StaticResource FieldHint}"
+                           Margin="0"
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- Wraps so a long engine error keeps its second line inside the window
+                 instead of being clipped at the right edge. -->
+            <TextBlock x:Name="StatusText"
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap"
+                       FontFamily="{DynamicResource AppFont}"
+                       FontSize="12"
+                       Foreground="{DynamicResource AppTextSecondary}"/>
+        </DockPanel>
+    </Grid>
+</UserControl>
